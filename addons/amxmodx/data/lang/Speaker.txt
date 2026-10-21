@@ -1,0 +1,72 @@
+[en] -- RedSMURF
+SPEAKER_CHAT_TAG                                = ^4[SPEAKER]^1
+SPEAKER_CHAT_LIMIT                              = You've reached the maximum number of Speakers ^4%d
+SPEAKER_CHAT_NO_SPEAKER                         = There are no Speakers available
+SPEAKER_CHAT_NOT_ALIVE                          = The target player is not alive
+SPEAKER_CHAT_NO_GALLOWS                         = There are no available gallows
+SPEAKER_CHAT_CREATE_NEW                         = ^3%s ^1created
+SPEAKER_CHAT_REMOVE_CURRENT                     = ^3%s ^1removed
+SPEAKER_CHAT_REMOVE_ALL                         = All Speakers removed
+SPEAKER_CHAT_SAVE                               = Speaker data saved in ^4%s
+SPEAKER_CHAT_SHOW_CURRENT                       = ^3%s ^1is %L
+SPEAKER_CHAT_SHOW_ALL_SHOWN                     = All Speakers are now Shown
+SPEAKER_CHAT_SHOW_ALL_HIDDEN                    = All Speakers are now Hidden
+SPEAKER_CHAT_STATUS_CURRENT                     = ^3%s ^1is %L
+SPEAKER_CHAT_STATUS_ALL_ENABLED                 = All Speakers are now Enabled
+SPEAKER_CHAT_STATUS_ALL_DISABLED                = All Speakers are now Disabled
+
+SPEAKER_CHAT_SHOWN                              = Shown
+SPEAKER_CHAT_HIDDEN                             = Hidden
+SPEAKER_CHAT_ENABLED                            = Enabled
+SPEAKER_CHAT_DISABLED                           = Disabled
+
+SPEAKER_NAV_NEXT                                = Next
+SPEAKER_NAV_BACK                                = Back
+SPEAKER_ON                                      = \y[ON]
+SPEAKER_OFF                                     = \r[OFF]
+SPEAKER_SHOWN                                   = \y[SHOWN]
+SPEAKER_HIDDEN                                  = \r[HIDDEN]
+SPEAKER_ENABLED                                 = \y[ENABLED]
+SPEAKER_DISABLED                                = \r[DISABLED]
+
+SPEAKER_MENU_TITLE                              = \dSpeaker - Version \y%s
+SPEAKER_MENU_TITLE_PAGE                         = \yPage:\r
+SPEAKER_ROOT_CREATE                             = Create Speaker
+SPEAKER_ROOT_EDIT                               = Edit Speaker
+SPEAKER_ROOT_REMOVE                             = Remove Speaker
+SPEAKER_ROOT_SAVE                               = Save Data
+SPEAKER_ROOT_SHOW                               = Visibility Settings
+SPEAKER_ROOT_STATUS                             = Status Settings
+SPEAKER_ROOT_NOCLIP                             = Status Noclip %L
+SPEAKER_ROOT_GODMODE                            = Status Godmode %L
+SPEAKER_ROOT_ROTATE                             = Adjust Rotation
+SPEAKER_ROOT_SPEAKER                            = Speaker Settings
+SPEAKER_ROOT_SPEAKER_SONG                       = Change Song
+SPEAKER_ROOT_SPEAKER_VOLUME                     = Change Volume
+
+SPEAKER_EDIT_SHOW                               = Edit Visibility
+SPEAKER_EDIT_STATUS                             = Edit Status
+
+SPEAKER_REMOVE_CURRENT                          = Remove Speaker >> \y%s
+SPEAKER_REMOVE_ALL                              = Remove all Speakers
+
+SPEAKER_SHOW_CURRENT                            = Show Speaker >> %s%s %L
+SPEAKER_SHOW_ALL_SHOW                           = Show all Speakers
+SPEAKER_SHOW_ALL_HIDE                           = Hide all Speakers
+
+SPEAKER_STATUS_CURRENT                          = Enable Speaker >> %s%s %L
+SPEAKER_STATUS_ALL_ENABLE                       = Enable all Speakers
+SPEAKER_STATUS_ALL_DISABLE                      = Disable all Speakers
+
+SPEAKER_ROTATE_UP                               = Turn Up
+SPEAKER_ROTATE_DOWN                             = Turn Down
+SPEAKER_ROTATE_GROUND                           = Set on ground >> %L
+SPEAKER_ROTATE_PLACE                            = Place Speaker
+
+SPEAKER_SPEAKER_SONG                            = Change Song
+SPEAKER_SPEAKER_VOLUME                          = Change Volume
+SPEAKER_SPEAKER_POWER                           = Toggle Power %L
+
+SPEAKER_VOLUME_CURRENT                          = \wVolume: %s \y%.0f%%
+SPEAKER_VOLUME_UP                               = Volume Up
+SPEAKER_VOLUME_DOWN                             = Volume Down
