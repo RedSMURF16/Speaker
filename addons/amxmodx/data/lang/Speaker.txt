@@ -28,6 +28,9 @@ SPEAKER_SHOWN                                   = \y[SHOWN]
 SPEAKER_HIDDEN                                  = \r[HIDDEN]
 SPEAKER_ENABLED                                 = \y[ENABLED]
 SPEAKER_DISABLED                                = \r[DISABLED]
+SPEAKER_LOOP                                    = \y[LOOP]
+SPEAKER_SEQUENTIAL                              = \y[SEQUENTIAL]
+SPEAKER_RANDOM                                  = \y[RANDOM]
 
 SPEAKER_MENU_TITLE                              = \dSpeaker - Version \y%s
 SPEAKER_MENU_TITLE_PAGE                         = \yPage:\r
@@ -65,6 +68,7 @@ SPEAKER_ROTATE_PLACE                            = Place Speaker
 
 SPEAKER_SPEAKER_SONG                            = Change Song
 SPEAKER_SPEAKER_VOLUME                          = Change Volume
+SPEAKER_SPEAKER_MODE                            = Change Mode %L
 SPEAKER_SPEAKER_POWER                           = Toggle Power %L
 
 SPEAKER_VOLUME_CURRENT                          = \wVolume: %s \y%.0f%%

@@ -55,6 +55,7 @@
 #define SPEAKER_KEY                     512231
 #define SPEAKER_ARRAY_ITEM              pev_iuser1
 #define VOLUME_STEP                     10.0
+#define REFRESH_RATE                    0.9
 #define SOUND_NAV                       "buttons/blip1.wav"
 #define SOUND_REMOVE                    "buttons/button10.wav"
 #define SOUND_ALERT                     "buttons/bell1.wav"
@@ -110,6 +111,7 @@ enum
 
 enum
 {
+    MODE_LOOP,
     MODE_SEQUENTIAL,
     MODE_RANDOM
 }
@@ -120,6 +122,7 @@ enum _:MAIN_SETTINGS
     SETTING_DEFAULT_FLAGS,
     SETTING_DEFAULT_MODE,
     SETTING_DEFAULT_USE_FLAGS,
+    SETTING_DEFAULT_USE_TEAM,
     Float:SETTING_DEFAULT_ATTENUATION,
     Float:SETTING_DEFAULT_SHAKE_DISTANCE,
     SETTING_DEFAULT_SHAKE_AMPLITUDE,
@@ -146,6 +149,7 @@ enum _:SPEAKER
     SPEAKER_FLAGS,
     SPEAKER_MODE,
     SPEAKER_USE_FLAGS,
+    SPEAKER_USE_TEAM,
     Float:SPEAKER_ATTENUATION,
     Float:SPEAKER_CURRENT_VOLUME,
     SPEAKER_CURRENT_SONG[MAX_VALUE_LENGTH],
@@ -157,7 +161,7 @@ enum _:SPEAKER
     Float:SPEAKER_ANGLES[3],
     Float:SPEAKER_MINS[3],
     Float:SPEAKER_MAXS[3],
-    Array:SPEAKER_SONG_LIST,
+    Array:SPEAKER_SONG,
     Array:SPEAKER_SONG_DURATION,
     SPEAKER_SONG_COUNT,
 
@@ -170,11 +174,14 @@ enum _:PLAYER_DATA
     PDATA_SPEAKER_MENU,
     bool:PDATA_SPEAKER_ACTION,
     PDATA_SPEAKER_ID,
+    bool:PDATA_SPEAKER_REFRESH,
+    bool:PDATA_SPEAKER_REFRESHING,
     Float:PDATA_OFFSET,
     Float:PDATA_NEXT_OFFSET,
 
     PDATA_MENU_TYPE,
-    bool:PDATA_MENU_TRACE
+    bool:PDATA_MENU_TRACE,
+    Float:PDATA_NEXT_REFRESH
 }
 
 enum
@@ -255,9 +262,10 @@ enum
 
 enum
 {
-    SPEAKER_SONG,
-    SPEAKER_VOLUME,
-    SPEAKER_POWER
+    SPEAKER_SPEAKER_SONG = 2,
+    SPEAKER_SPEAKER_VOLUME,
+    SPEAKER_SPEAKER_MODE,
+    SPEAKER_SPEAKER_POWER
 }
 
 enum
@@ -302,6 +310,7 @@ new Array:g_aSpeaker,
 
 new const g_iColorActive[] = { 0, 255, 0 }
 new const g_iColorInactive[] = { 255, 0, 0 }
+new g_szSpeakerMode[][] = {"SPEAKER_LOOP", "SPEAKER_SEQUENTIAL", "SPEAKER_RANDOM"}
 
 public plugin_init()
 {
@@ -424,8 +433,9 @@ ReadFile()
                         eSpeaker[SPEAKER_FLAGS]                     = g_eSettings[SETTING_DEFAULT_FLAGS]
                         eSpeaker[SPEAKER_MODE]                      = g_eSettings[SETTING_DEFAULT_MODE]
                         eSpeaker[SPEAKER_USE_FLAGS]                 = g_eSettings[SETTING_DEFAULT_USE_FLAGS]
-                        eSpeaker[SPEAKER_ATTENUATION]                = g_eSettings[SETTING_DEFAULT_ATTENUATION]
-                        eSpeaker[SPEAKER_SONG_LIST]                 = ArrayCreate(MAX_RESOURCE_PATH_LENGTH)
+                        eSpeaker[SPEAKER_USE_TEAM]                  = g_eSettings[SETTING_DEFAULT_USE_TEAM]
+                        eSpeaker[SPEAKER_ATTENUATION]               = g_eSettings[SETTING_DEFAULT_ATTENUATION]
+                        eSpeaker[SPEAKER_SONG]                      = ArrayCreate(MAX_RESOURCE_PATH_LENGTH)
                         eSpeaker[SPEAKER_SONG_DURATION]             = ArrayCreate(1)
                         eSpeaker[SPEAKER_SONG_COUNT]                = 0
 
@@ -465,6 +475,8 @@ ReadFile()
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_MODE], charsmax(g_eSettings[SETTING_DEFAULT_MODE]))
                         else if ( equali(szKey, "SETTING_DEFAULT_USE_FLAGS") )
                             parseSetting(DTYPE_FLAGS, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_USE_FLAGS], charsmax(g_eSettings[SETTING_DEFAULT_USE_FLAGS]))
+                        else if ( equali(szKey, "SETTING_DEFAULT_USE_TEAM") )
+                            parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_USE_TEAM], charsmax(g_eSettings[SETTING_DEFAULT_USE_TEAM]))
                         else if ( equali(szKey, "SETTING_DEFAULT_ATTENUATION") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ATTENUATION], charsmax(g_eSettings[SETTING_DEFAULT_ATTENUATION]))
                         else if ( equali(szKey, "SETTING_DEFAULT_SHAKE_DISTANCE") )
@@ -504,11 +516,13 @@ ReadFile()
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), eSpeaker[SPEAKER_MODE], charsmax(eSpeaker[SPEAKER_MODE]))
                         else if ( equali(szKey, "SPEAKER_USE_FLAGS") )
                             parseSetting(DTYPE_FLAGS, szValue, charsmax(szValue), eSpeaker[SPEAKER_USE_FLAGS], charsmax(eSpeaker[SPEAKER_USE_FLAGS]))
+                        else if ( equali(szKey, "SPEAKER_USE_TEAM") )
+                            parseSetting(DTYPE_INT, szValue, charsmax(szValue), eSpeaker[SPEAKER_USE_TEAM], charsmax(eSpeaker[SPEAKER_USE_TEAM]))
                         else if ( equali(szKey, "SPEAKER_ATTENUATION") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), eSpeaker[SPEAKER_ATTENUATION], charsmax(eSpeaker[SPEAKER_ATTENUATION]))
                         else if ( equali(szKey, "SPEAKER_SONG") )
                         {
-                            parseSetting(DTYPE_ARRAY_SOUND, szValue, charsmax(szValue), eSpeaker[SPEAKER_SONG_LIST], charsmax(eSpeaker[SPEAKER_SONG_LIST]))
+                            parseSetting(DTYPE_ARRAY_SOUND, szValue, charsmax(szValue), eSpeaker[SPEAKER_SONG], charsmax(eSpeaker[SPEAKER_SONG]))
                             parseDuration(eSpeaker, szValue)
                         }
                     }
@@ -1213,9 +1227,18 @@ public menuHandlerRotate(id, menu, item)
 
 public menuSpeaker(id, iMenu)
 {
-    new eSpeaker[SPEAKER], szItem[64]
-    if ( speakerGet(eSpeaker, g_ePlayerData[id][PDATA_SPEAKER_ID]) == -1 )
+    new eSpeaker[SPEAKER], szItem[64], iItem
+    if ( (iItem = speakerGet(eSpeaker, g_ePlayerData[id][PDATA_SPEAKER_ID])) == -1 )
         return
+
+    new Float:fElapsed, Float:fDuration
+    fDuration = Float:ArrayGetCell(eSpeaker[SPEAKER_SONG_DURATION], iItem)
+    fElapsed  = floatclamp(fDuration - (Float:eSpeaker[SPEAKER_NEXT_SONG] - get_gametime()), 0.0, fDuration)
+
+    formatex(szItem, charsmax(szItem), "\d%d:%02d / %d:%02d",
+    floatround(fElapsed) / 60, floatround(fElapsed) % 60, floatround(fDuration) / 60, floatround(fDuration) % 60)
+    menu_addtext2(iMenu, szItem)
+    menu_addblank2(iMenu)
 
     formatex(szItem, charsmax(szItem), "%L", id, "SPEAKER_SPEAKER_SONG")
     menu_additem(iMenu, szItem)
@@ -1223,37 +1246,67 @@ public menuSpeaker(id, iMenu)
     formatex(szItem, charsmax(szItem), "%L", id, "SPEAKER_SPEAKER_VOLUME")
     menu_additem(iMenu, szItem)
 
+    formatex(szItem, charsmax(szItem), "%L", id, "SPEAKER_SPEAKER_MODE", id, g_szSpeakerMode[eSpeaker[SPEAKER_MODE]])
+    menu_additem(iMenu, szItem)
+
     formatex(szItem, charsmax(szItem), "%L", id, "SPEAKER_SPEAKER_POWER", id, eSpeaker[SPEAKER_FLAGS] & FLAG_ACTIVE ? "SPEAKER_ON" : "SPEAKER_OFF")
     menu_additem(iMenu, szItem)
+
+    g_ePlayerData[id][PDATA_SPEAKER_REFRESH] = true
 }
 
 public menuHandlerSpeaker(id, menu, item)
 {
+    new eSpeaker[SPEAKER], iItem
+    if ( (iItem = speakerGet(eSpeaker, g_ePlayerData[id][PDATA_SPEAKER_ID])) == -1 )
+    {
+        menu_destroy(menu)
+        return PLUGIN_HANDLED
+    }
+
     switch( item )
     {
-        case SPEAKER_SONG:
+        case SPEAKER_SPEAKER_SONG:
         {
+            g_ePlayerData[id][PDATA_SPEAKER_REFRESH] = false
+
             speakerSound(id, SOUND_MENU_NAV)
             speakerMenu(id, MENU_SPEAKER_SONG)
         }
-        case SPEAKER_VOLUME:
+        case SPEAKER_SPEAKER_VOLUME:
         {
+            g_ePlayerData[id][PDATA_SPEAKER_REFRESH] = false
+
             speakerSound(id, SOUND_MENU_NAV)
             speakerMenu(id, MENU_SPEAKER_VOLUME)
         }
-        case SPEAKER_POWER:
+        case SPEAKER_SPEAKER_MODE:
         {
-            new eSpeaker[SPEAKER], Iitem
-            if ( (Iitem = speakerGet(eSpeaker, g_ePlayerData[id][PDATA_SPEAKER_ID])) != -1 )
-            {
-                eSpeaker[SPEAKER_FLAGS] ^= FLAG_ACTIVE
-                speakerSetState(eSpeaker)
+            if ( ++ eSpeaker[SPEAKER_MODE] > MODE_RANDOM )
+                eSpeaker[SPEAKER_MODE] = MODE_LOOP
 
-                ArraySetArray(g_aSpeaker, Iitem, eSpeaker)
-            }
-
+            ArraySetArray(g_aSpeaker, iItem, eSpeaker)
             speakerSound(id, SOUND_MENU_NAV)
             speakerMenu(id, MENU_SPEAKER)
+        }
+        case SPEAKER_SPEAKER_POWER:
+        {
+            eSpeaker[SPEAKER_FLAGS] ^= FLAG_ACTIVE
+            speakerSetState(eSpeaker)
+
+            ArraySetArray(g_aSpeaker, iItem, eSpeaker)
+            speakerSound(id, SOUND_MENU_NAV)
+            speakerMenu(id, MENU_SPEAKER)
+        }
+        case MENU_EXIT:
+        {
+            if ( !g_ePlayerData[id][PDATA_SPEAKER_REFRESHING] )
+                g_ePlayerData[id][PDATA_SPEAKER_REFRESH] = false
+        }
+        default:
+        {
+            if ( !g_ePlayerData[id][PDATA_SPEAKER_REFRESHING] )
+                g_ePlayerData[id][PDATA_SPEAKER_REFRESH] = false
         }
     }
 
@@ -1270,7 +1323,7 @@ public menuSpeakerSong(id, iMenu)
     new szSound[MAX_RESOURCE_PATH_LENGTH], szName[MAX_VALUE_LENGTH], szItem[128], iPos
     for ( new i = 0; i < eSpeaker[SPEAKER_SONG_COUNT]; i ++ )
     {
-        ArrayGetString(eSpeaker[SPEAKER_SONG_LIST], i, szSound, charsmax(szSound))
+        ArrayGetString(eSpeaker[SPEAKER_SONG], i, szSound, charsmax(szSound))
         iPos = strlen(szSound)
         while ( -- iPos >= 0 && szSound[iPos] != '/' ) { }
 
@@ -1311,7 +1364,7 @@ public menuHandlerSpeakerSong(id, menu, item)
     }
 
     eSpeaker[SPEAKER_CURRENT_SONG_ID] = item
-    engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
+    engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
     speakerSpeaker(eSpeaker)
     ArraySetArray(g_aSpeaker, iItem, eSpeaker)
 
@@ -1368,7 +1421,7 @@ public menuHandlerSpeakerVolume(id, menu, item)
     eSpeaker[SPEAKER_CURRENT_VOLUME] = floatclamp(eSpeaker[SPEAKER_CURRENT_VOLUME] + (item == VOLUME_UP ? VOLUME_STEP : -VOLUME_STEP), 0.0, 100.0)
     ArraySetArray(g_aSpeaker, iSpeaker, eSpeaker)
     if ( eSpeaker[SPEAKER_CURRENT_SONG][0] )
-        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_CHANGE_VOL, PITCH_NORM)
+        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_CHANGE_VOL, 120)
 
     speakerSound(id, SOUND_MENU_NAV)
     speakerMenu(id, MENU_SPEAKER_VOLUME)
@@ -1394,10 +1447,11 @@ public speakerTask()
 
             if ( fCurrentTime >= eSpeaker[SPEAKER_NEXT_SONG] )
             {
-                if ( ++ eSpeaker[SPEAKER_CURRENT_SONG_ID] >= eSpeaker[SPEAKER_SONG_COUNT] )
-                    eSpeaker[SPEAKER_CURRENT_SONG_ID] = 0
+                if ( eSpeaker[SPEAKER_MODE] != MODE_LOOP )
+                    if ( ++ eSpeaker[SPEAKER_CURRENT_SONG_ID] >= eSpeaker[SPEAKER_SONG_COUNT] )
+                        eSpeaker[SPEAKER_CURRENT_SONG_ID] = 0
 
-                engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
+                engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
                 speakerSpeaker(eSpeaker)
                 bModified = true
             }
@@ -1405,6 +1459,19 @@ public speakerTask()
 
         if ( bModified )
             ArraySetArray(g_aSpeaker, i, eSpeaker)
+    }
+
+    for ( new id = 1; id <= g_iMaxPlayers; id ++ )
+    {
+        if ( !is_user_alive(id)
+        || !g_ePlayerData[id][PDATA_SPEAKER_REFRESH]
+        || fCurrentTime < g_ePlayerData[id][PDATA_NEXT_REFRESH] )
+            continue
+
+        g_ePlayerData[id][PDATA_SPEAKER_REFRESHING] = true
+        speakerMenu(id, MENU_SPEAKER)
+        g_ePlayerData[id][PDATA_SPEAKER_REFRESHING] = false
+        g_ePlayerData[id][PDATA_NEXT_REFRESH] = fCurrentTime + REFRESH_RATE
     }
 }
 
@@ -1418,7 +1485,7 @@ stock speakerCreate(id, iItem)
     ArrayGetArray(g_aSpeakerConfig, iItem, eSpeaker)
     eSpeaker[SPEAKER_ID] = iEnt
     eSpeaker[SPEAKER_ITEM] = iItem
-    eSpeaker[SPEAKER_SONG_LIST] = ArrayClone(eSpeaker[SPEAKER_SONG_LIST])
+    eSpeaker[SPEAKER_SONG] = ArrayClone(eSpeaker[SPEAKER_SONG])
     eSpeaker[SPEAKER_SONG_DURATION] = ArrayClone(eSpeaker[SPEAKER_SONG_DURATION])
     if ( id )
     {
@@ -1451,7 +1518,7 @@ public speakerRemove(iItem)
 {
     new eSpeaker[SPEAKER]
     ArrayGetArray(g_aSpeaker, iItem, eSpeaker)
-    ArrayDestroy(eSpeaker[SPEAKER_SONG_LIST])
+    ArrayDestroy(eSpeaker[SPEAKER_SONG])
     ArrayDestroy(eSpeaker[SPEAKER_SONG_DURATION])
     ArrayDeleteItem(g_aSpeaker, iItem)
 
@@ -1631,7 +1698,8 @@ public fwdUse(iEnt, iCaller, iActivator, iType, Float:fValue)
     new eSpeaker[SPEAKER]
     if ( speakerGet(eSpeaker, iEnt) == -1
     || !(eSpeaker[SPEAKER_FLAGS] & FLAG_ACTIVE)
-    || !(get_user_flags(iActivator) & eSpeaker[SPEAKER_USE_FLAGS]) )
+    || !(get_user_flags(iActivator) & eSpeaker[SPEAKER_USE_FLAGS])
+    || !(CsTeams:eSpeaker[SPEAKER_USE_TEAM] & cs_get_user_team(iActivator)) )
         return HAM_IGNORED
 
     g_ePlayerData[iActivator][PDATA_SPEAKER_ID] = iEnt
@@ -1903,7 +1971,7 @@ stock speakerSetState(eSpeaker[SPEAKER])
         if ( !(eSpeaker[SPEAKER_FLAGS] & FLAG_ACTIVE) )
         {
             eSpeaker[SPEAKER_NEXT_SONG] = 0.0
-            engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
+            engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
         }
         else if ( !eSpeaker[SPEAKER_NEXT_SONG] )
             speakerSpeaker(eSpeaker)
@@ -1914,7 +1982,7 @@ stock speakerSetState(eSpeaker[SPEAKER])
         speakerSelect(eSpeaker, TARGET_HIDE)
 
         eSpeaker[SPEAKER_NEXT_SONG] = 0.0
-        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
+        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
     }
 }
 
@@ -1955,14 +2023,14 @@ stock speakerSound(iEnt, iSound, bool:bPlayer = true)
     if ( bPlayer )
         client_cmd(iEnt, "spk %s", szSample)
     else
-        engfunc(EngFunc_EmitSound, iEnt, CHAN_ITEM, szSample, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
+        engfunc(EngFunc_EmitSound, iEnt, CHAN_ITEM, szSample, VOL_NORM, ATTN_NORM, 0, 120)
 }
 
 stock speakerSpeaker(eSpeaker[SPEAKER])
 {
     new szSound[MAX_RESOURCE_PATH_LENGTH], iIndex, Float:fDuration
     iIndex = eSpeaker[SPEAKER_MODE] == MODE_RANDOM ? random_num(0, eSpeaker[SPEAKER_SONG_COUNT] - 1) : eSpeaker[SPEAKER_CURRENT_SONG_ID]
-    ArrayGetString(eSpeaker[SPEAKER_SONG_LIST], iIndex, szSound, charsmax(szSound))
+    ArrayGetString(eSpeaker[SPEAKER_SONG], iIndex, szSound, charsmax(szSound))
     fDuration = Float:ArrayGetCell(eSpeaker[SPEAKER_SONG_DURATION], iIndex)
     if ( fDuration <= 0.0 )
         fDuration = 1.0
@@ -1980,6 +2048,9 @@ stock speakerReset()
         ArrayGetArray(g_aSpeaker, i, eSpeaker)
         ArraySetArray(g_aSpeaker, i, eSpeaker)
     }
+
+    for ( new id = 1; id <= g_iMaxPlayers; id ++ )
+        g_ePlayerData[id][PDATA_NEXT_REFRESH] = 0.0
 }
 
 stock speakerGet(eSpeaker[SPEAKER], iEnt)
@@ -2076,11 +2147,21 @@ stock parseSetting(iType, szValue[], iValueLen, any:aOutput[], iOutputLength)
 
 stock parseDuration(eSpeaker[SPEAKER], const szFile[])
 {
-    new szPath[128]
+    new szPath[128], iFile
     formatex(szPath, charsmax(szPath), "sound/%s", szFile)
-    new iFile = fopen(szPath, "rb")
+    static const szPathIds[][] = { "GAME", "GAME_FALLBACK", "DEFAULTGAME", "BASE" }
+
+    for ( new i; i < sizeof szPathIds; i++ )
+    {
+        if ( (iFile = fopen(szPath, "rb", true, szPathIds[i])) )
+            break
+    }
+
     if ( !iFile )
+    {
+        server_print("[Speaker] can't open %s in any game folder", szPath)
         return
+    }
 
     fseek(iFile, 0, SEEK_END)
     new iSize = ftell(iFile)
