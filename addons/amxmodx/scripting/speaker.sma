@@ -20,7 +20,6 @@
 
 #include <amxmodx>
 #include <amxmisc>
-#include <cstrike>
 #include <fakemeta>
 #include <hamsandwich>
 #include <xs>
@@ -1474,7 +1473,7 @@ public speakerTask()
 
 stock speakerCreate(id, iItem)
 {
-    new iEnt = cs_create_entity("info_target")
+    new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
     if ( !pev_valid(iEnt) )
         return
 
@@ -1696,7 +1695,7 @@ public fwdUse(iEnt, iCaller, iActivator, iType, Float:fValue)
     if ( speakerGet(eSpeaker, iEnt) == -1
     || !(eSpeaker[SPEAKER_FLAGS] & FLAG_ACTIVE)
     || !(get_user_flags(iActivator) & eSpeaker[SPEAKER_USE_FLAGS])
-    || !(CsTeams:eSpeaker[SPEAKER_USE_TEAM] & cs_get_user_team(iActivator)) )
+    || !(eSpeaker[SPEAKER_USE_TEAM] & get_user_team(iActivator)) )
         return HAM_IGNORED
 
     g_ePlayerData[iActivator][PDATA_SPEAKER_ID] = iEnt
