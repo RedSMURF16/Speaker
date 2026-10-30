@@ -76,11 +76,13 @@ enum
     DTYPE_INT,
     DTYPE_FLOAT,
     DTYPE_FLAGS,
-    DTYPE_ARRAY_STRING,
-    DTYPE_ARRAY_SOUND,
     DTYPE_STRING_MODEL,
     DTYPE_STRING_SOUND,
-    DTYPE_STRING_MODEL_ID
+    DTYPE_ARRAY_MESSAGE,
+    DTYPE_ARRAY_MODEL,
+    DTYPE_ARRAY_SOUND,
+    DTYPE_STRING_MODEL_ID,
+    DTYPE_ARRAY_MODEL_ID
 }
 
 enum
@@ -1364,7 +1366,7 @@ public menuHandlerSpeakerSong(id, menu, item)
     }
 
     eSpeaker[SPEAKER_CURRENT_SONG_ID] = item
-    engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
+    engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
     speakerSpeaker(eSpeaker)
     ArraySetArray(g_aSpeaker, iItem, eSpeaker)
 
@@ -1421,7 +1423,7 @@ public menuHandlerSpeakerVolume(id, menu, item)
     eSpeaker[SPEAKER_CURRENT_VOLUME] = floatclamp(eSpeaker[SPEAKER_CURRENT_VOLUME] + (item == VOLUME_UP ? VOLUME_STEP : -VOLUME_STEP), 0.0, 100.0)
     ArraySetArray(g_aSpeaker, iSpeaker, eSpeaker)
     if ( eSpeaker[SPEAKER_CURRENT_SONG][0] )
-        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_CHANGE_VOL, 120)
+        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_CHANGE_VOL, PITCH_NORM)
 
     speakerSound(id, SOUND_MENU_NAV)
     speakerMenu(id, MENU_SPEAKER_VOLUME)
@@ -1451,7 +1453,7 @@ public speakerTask()
                     if ( ++ eSpeaker[SPEAKER_CURRENT_SONG_ID] >= eSpeaker[SPEAKER_SONG_COUNT] )
                         eSpeaker[SPEAKER_CURRENT_SONG_ID] = 0
 
-                engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
+                engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
                 speakerSpeaker(eSpeaker)
                 bModified = true
             }
@@ -1971,7 +1973,7 @@ stock speakerSetState(eSpeaker[SPEAKER])
         if ( !(eSpeaker[SPEAKER_FLAGS] & FLAG_ACTIVE) )
         {
             eSpeaker[SPEAKER_NEXT_SONG] = 0.0
-            engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
+            engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
         }
         else if ( !eSpeaker[SPEAKER_NEXT_SONG] )
             speakerSpeaker(eSpeaker)
@@ -1982,7 +1984,7 @@ stock speakerSetState(eSpeaker[SPEAKER])
         speakerSelect(eSpeaker, TARGET_HIDE)
 
         eSpeaker[SPEAKER_NEXT_SONG] = 0.0
-        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, 120)
+        engfunc(EngFunc_EmitAmbientSound, eSpeaker[SPEAKER_ID], eSpeaker[SPEAKER_ORIGIN], eSpeaker[SPEAKER_CURRENT_SONG], eSpeaker[SPEAKER_CURRENT_VOLUME] / 100.0, eSpeaker[SPEAKER_ATTENUATION], SND_STOP, PITCH_NORM)
     }
 }
 
@@ -2023,7 +2025,7 @@ stock speakerSound(iEnt, iSound, bool:bPlayer = true)
     if ( bPlayer )
         client_cmd(iEnt, "spk %s", szSample)
     else
-        engfunc(EngFunc_EmitSound, iEnt, CHAN_ITEM, szSample, VOL_NORM, ATTN_NORM, 0, 120)
+        engfunc(EngFunc_EmitSound, iEnt, CHAN_ITEM, szSample, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
 }
 
 stock speakerSpeaker(eSpeaker[SPEAKER])
@@ -2116,17 +2118,6 @@ stock parseSetting(iType, szValue[], iValueLen, any:aOutput[], iOutputLength)
         {
             aOutput[0] = read_flags(szValue)
         }
-        case DTYPE_ARRAY_STRING:
-        {
-            replace_all(szValue, iValueLen, "^"", " ")
-            replace_all(szValue, iValueLen, "^^n", "^n")
-            ArrayPushString(aOutput[0], szValue)
-        }
-        case DTYPE_ARRAY_SOUND:
-        {
-            ArrayPushString(aOutput[0], szValue)
-            if ( !g_bFileWasRead ) precache_sound(szValue)
-        }
         case DTYPE_STRING_MODEL:
         {
             copy(aOutput, iOutputLength, szValue)
@@ -2137,10 +2128,33 @@ stock parseSetting(iType, szValue[], iValueLen, any:aOutput[], iOutputLength)
             copy(aOutput, iOutputLength, szValue)
             if ( !g_bFileWasRead ) precache_sound(szValue)
         }
+        case DTYPE_ARRAY_MESSAGE:
+        {
+            replace_all(szValue, iValueLen, "^"", " ")
+            replace_all(szValue, iValueLen, "^^n", "^n")
+            ArrayPushString(aOutput[0], szValue)
+        }
+        case DTYPE_ARRAY_MODEL:
+        {
+            if ( !g_bFileWasRead )
+                precache_model(szValue)
+
+            ArrayPushString(aOutput[0], szValue)
+        }
+        case DTYPE_ARRAY_SOUND:
+        {
+            ArrayPushString(aOutput[0], szValue)
+            if ( !g_bFileWasRead ) precache_sound(szValue)
+        }
         case DTYPE_STRING_MODEL_ID:
         {
             if ( !g_bFileWasRead )
                 aOutput[0] = precache_model(szValue)
+        }
+        case DTYPE_ARRAY_MODEL_ID:
+        {
+            if ( !g_bFileWasRead )
+                ArrayPushCell(aOutput[0], precache_model(szValue))
         }
     }
 }

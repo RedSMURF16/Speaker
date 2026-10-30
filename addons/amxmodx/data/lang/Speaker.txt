@@ -2,7 +2,6 @@
 SPEAKER_CHAT_TAG                                = ^4[SPEAKER]^1
 SPEAKER_CHAT_LIMIT                              = You've reached the maximum number of Speakers ^4%d
 SPEAKER_CHAT_NO_SPEAKER                         = There are no Speakers available
-SPEAKER_CHAT_NOT_ALIVE                          = The target player is not alive
 SPEAKER_CHAT_NO_GALLOWS                         = There are no available gallows
 SPEAKER_CHAT_CREATE_NEW                         = ^3%s ^1created
 SPEAKER_CHAT_REMOVE_CURRENT                     = ^3%s ^1removed
