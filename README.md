@@ -15,6 +15,10 @@ Players can interact with speakers to change songs, adjust volume and control pl
 - Use short, loopable WAV clips compatible with GoldSrc rather than full songs
 - Use supported PCM WAV files with clean loop points and no noticeable silence or abrupt transitions
 
+## 📋 Requirements
+- ReGameDLL
+- AMX Mod X 1.10+
+
 ## ⚙️ Configuration
 ```ini
 # To add a new Speaker, follow the example below:
