@@ -30,3 +30,5 @@ Players can interact with speakers to change songs, adjust volume and control pl
 ```text
 * v1.0: Initial release.
 ```
+
+[![Watch on YouTube](https://img.shields.io/badge/YouTube-Watch%20video-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=KGT44y-rT7M)
