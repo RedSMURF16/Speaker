@@ -1,7 +1,7 @@
 <h1 align="center">Speaker</h1>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=KGT44y-rT7M"><img src="https://img.youtube.com/vi/KGT44y-rT7M/maxresdefault.jpg" alt="Watch on YouTube" width="600"></a>
+  <img src="images/demo.gif" alt="Speaker">
 </p>
 
 ## 📝 Description
